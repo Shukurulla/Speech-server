@@ -6,7 +6,16 @@ const testSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-
+    lessonId: {
+      type: mongoose.Types.ObjectId,
+      ref: "Lesson",
+      required: true,
+    },
+    gradeId: {
+      type: mongoose.Types.ObjectId,
+      ref: "Grade",
+      required: true,
+    },
     category: {
       title: {
         type: String,
@@ -16,6 +25,19 @@ const testSchema = new mongoose.Schema(
         type: mongoose.Types.ObjectId,
         required: true,
       },
+    },
+    difficulty: {
+      type: String,
+      enum: ["easy", "medium", "hard"],
+      default: "medium",
+    },
+    orderNumber: {
+      type: Number,
+      default: 1,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   {
