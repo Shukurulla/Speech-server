@@ -35,6 +35,16 @@ const lessonSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    dictionaries: [
+      {
+        en: {
+          type: String,
+        },
+        uz: {
+          type: String,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

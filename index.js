@@ -13,6 +13,7 @@ import testDetailRouter from "./routes/test.details.routes.js";
 import AdminRouter from "./routes/admin.routes.js";
 import GradeRouter from "./routes/grade.routes.js";
 import LessonRouter from "./routes/lesson.routes.js";
+import TestResultRouter from "./routes/test.result.routes.js";
 
 config();
 
@@ -45,14 +46,19 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// Serve static files (audio uploads)
+// Serve static files (audio uploads) - IMPORTANT: This should be accessible
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/uploads/audio",
+  express.static(path.join(__dirname, "uploads/audio"))
+);
 
 // API Routes
 app.use("/api/user", UserRouter);
 app.use("/api/category", CategoryRouter);
 app.use("/api/test", TestRouter);
 app.use("/api/test-detail", testDetailRouter);
+app.use("/api/test-result", TestResultRouter);
 app.use("/api/admin", AdminRouter);
 app.use("/api/grade", GradeRouter);
 app.use("/api/lesson", LessonRouter);
@@ -63,6 +69,16 @@ app.get("/api/health", (req, res) => {
     status: "success",
     message: "Server is running",
     timestamp: new Date().toISOString(),
+  });
+});
+
+// Audio file test endpoint
+app.get("/test-audio", (req, res) => {
+  const audioPath = path.join(__dirname, "uploads/audio");
+  console.log("Audio directory path:", audioPath);
+  res.json({
+    audioPath,
+    message: "Check console for audio directory path",
   });
 });
 
@@ -97,4 +113,5 @@ app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
   console.log(`📊 Admin panel: http://localhost:${port}/api/admin`);
   console.log(`🎵 Audio files: http://localhost:${port}/uploads/audio`);
+  console.log(`🎵 Audio test: http://localhost:${port}/test-audio`);
 });

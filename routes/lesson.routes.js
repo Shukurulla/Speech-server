@@ -6,6 +6,7 @@ import Lesson from "../models/lesson.model.js";
 import Grade from "../models/grade.model.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import { adminOnly } from "../middleware/adminMiddleware.js";
+import lessonModel from "../models/lesson.model.js";
 
 const router = express.Router();
 
@@ -54,6 +55,7 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
 });
+
 // Get lessons by grade
 router.get("/grade/:gradeId", authMiddleware, async (req, res) => {
   try {
@@ -62,7 +64,24 @@ router.get("/grade/:gradeId", authMiddleware, async (req, res) => {
       isActive: true,
     }).sort({ orderNumber: 1 });
 
-    res.json({ status: "success", data: lessons });
+    // Add full URL for audio files
+    const lessonsWithAudioUrls = lessons.map((lesson) => {
+      const lessonObj = lesson.toObject();
+      if (lessonObj.audioFiles && lessonObj.audioFiles.length > 0) {
+        lessonObj.audioFiles = lessonObj.audioFiles.map((audioFile) => ({
+          ...audioFile,
+          url: `${req.protocol}://${req.get("host")}/uploads/audio/${
+            audioFile.filename
+          }`,
+          downloadUrl: `${req.protocol}://${req.get("host")}/api/lesson/${
+            lesson._id
+          }/audio/${audioFile.filename}`,
+        }));
+      }
+      return lessonObj;
+    });
+
+    res.json({ status: "success", data: lessonsWithAudioUrls });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
@@ -82,7 +101,21 @@ router.get("/:id", authMiddleware, async (req, res) => {
         .json({ status: "error", message: "Lesson not found" });
     }
 
-    res.json({ status: "success", data: lesson });
+    // Add full URL for audio files
+    const lessonObj = lesson.toObject();
+    if (lessonObj.audioFiles && lessonObj.audioFiles.length > 0) {
+      lessonObj.audioFiles = lessonObj.audioFiles.map((audioFile) => ({
+        ...audioFile,
+        url: `${req.protocol}://${req.get("host")}/uploads/audio/${
+          audioFile.filename
+        }`,
+        downloadUrl: `${req.protocol}://${req.get("host")}/api/lesson/${
+          lesson._id
+        }/audio/${audioFile.filename}`,
+      }));
+    }
+
+    res.json({ status: "success", data: lessonObj });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
@@ -297,7 +330,7 @@ router.delete("/:id", authMiddleware, adminOnly, async (req, res) => {
   }
 });
 
-// Serve audio files
+// Serve audio files - Updated route
 router.get("/:id/audio/:filename", async (req, res) => {
   try {
     const lesson = await Lesson.findById(req.params.id);
@@ -311,13 +344,88 @@ router.get("/:id/audio/:filename", async (req, res) => {
       (file) => file.filename === req.params.filename
     );
 
-    if (!audioFile || !fs.existsSync(audioFile.path)) {
+    if (!audioFile) {
       return res
         .status(404)
-        .json({ status: "error", message: "Audio file not found" });
+        .json({ status: "error", message: "Audio file not found in lesson" });
     }
 
-    res.sendFile(path.resolve(audioFile.path));
+    const filePath = path.resolve(audioFile.path);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Audio file not found on disk" });
+    }
+
+    // Set appropriate headers
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${audioFile.originalName}"`
+    );
+
+    // Send file
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error("Error serving audio file:", error);
+    res
+      .status(500)
+      .json({ status: "error", message: "Error serving audio file" });
+  }
+});
+
+// Test audio directory endpoint
+router.get(
+  "/test/audio-directory",
+  authMiddleware,
+  adminOnly,
+  async (req, res) => {
+    try {
+      const audioDir = path.resolve("uploads/audio");
+      const files = fs.existsSync(audioDir) ? fs.readdirSync(audioDir) : [];
+
+      res.json({
+        status: "success",
+        data: {
+          audioDirectory: audioDir,
+          exists: fs.existsSync(audioDir),
+          files: files.length,
+          fileList: files.slice(0, 10), // Show first 10 files
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ status: "error", message: error.message });
+    }
+  }
+);
+
+router.post("/:id/create-dictionary", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const findLesson = await lessonModel.findById(id);
+    if (!findLesson) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Lesson not found" });
+    }
+
+    const dictionaries = findLesson.dictionaries.push(req.body);
+
+    const updateLesson = await lessonModel.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          ...findLesson,
+          dictionaries,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+    res.status(200).json({ status: "success", data: updateLesson });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
