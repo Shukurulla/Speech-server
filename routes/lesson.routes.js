@@ -400,32 +400,164 @@ router.get(
     }
   }
 );
+router.post(
+  "/:id/create-dictionary",
+  authMiddleware,
+  adminOnly,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { en, uz } = req.body;
 
-router.post("/:id/create-dictionary", authMiddleware, async (req, res) => {
+      if (!en || !uz) {
+        return res.status(400).json({
+          status: "error",
+          message: "Both English and Uzbek words are required",
+        });
+      }
+
+      const lesson = await lessonModel.findById(id);
+      if (!lesson) {
+        return res.status(404).json({
+          status: "error",
+          message: "Lesson not found",
+        });
+      }
+
+      // Add new dictionary entry
+      lesson.dictionaries.push({ en, uz });
+      await lesson.save();
+
+      res.status(200).json({
+        status: "success",
+        message: "Dictionary entry added successfully",
+        data: lesson,
+      });
+    } catch (error) {
+      res.status(500).json({ status: "error", message: error.message });
+    }
+  }
+);
+
+// Update dictionary entry
+router.put(
+  "/:id/dictionary/:dictionaryId",
+  authMiddleware,
+  adminOnly,
+  async (req, res) => {
+    try {
+      const { id, dictionaryId } = req.params;
+      const { en, uz } = req.body;
+
+      if (!en || !uz) {
+        return res.status(400).json({
+          status: "error",
+          message: "Both English and Uzbek words are required",
+        });
+      }
+
+      const lesson = await lessonModel.findById(id);
+      if (!lesson) {
+        return res.status(404).json({
+          status: "error",
+          message: "Lesson not found",
+        });
+      }
+
+      // Find and update dictionary entry
+      const dictionaryIndex = lesson.dictionaries.findIndex(
+        (dict) => dict._id.toString() === dictionaryId
+      );
+
+      if (dictionaryIndex === -1) {
+        return res.status(404).json({
+          status: "error",
+          message: "Dictionary entry not found",
+        });
+      }
+
+      lesson.dictionaries[dictionaryIndex] = {
+        ...lesson.dictionaries[dictionaryIndex],
+        en,
+        uz,
+      };
+
+      await lesson.save();
+
+      res.status(200).json({
+        status: "success",
+        message: "Dictionary entry updated successfully",
+        data: lesson,
+      });
+    } catch (error) {
+      res.status(500).json({ status: "error", message: error.message });
+    }
+  }
+);
+
+// Delete dictionary entry
+router.delete(
+  "/:id/dictionary/:dictionaryId",
+  authMiddleware,
+  adminOnly,
+  async (req, res) => {
+    try {
+      const { id, dictionaryId } = req.params;
+
+      const lesson = await lessonModel.findById(id);
+      if (!lesson) {
+        return res.status(404).json({
+          status: "error",
+          message: "Lesson not found",
+        });
+      }
+
+      // Find and remove dictionary entry
+      const dictionaryIndex = lesson.dictionaries.findIndex(
+        (dict) => dict._id.toString() === dictionaryId
+      );
+
+      if (dictionaryIndex === -1) {
+        return res.status(404).json({
+          status: "error",
+          message: "Dictionary entry not found",
+        });
+      }
+
+      lesson.dictionaries.splice(dictionaryIndex, 1);
+      await lesson.save();
+
+      res.status(200).json({
+        status: "success",
+        message: "Dictionary entry deleted successfully",
+        data: lesson,
+      });
+    } catch (error) {
+      res.status(500).json({ status: "error", message: error.message });
+    }
+  }
+);
+
+// Get all dictionaries for a lesson
+router.get("/:id/dictionaries", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const findLesson = await lessonModel.findById(id);
-    if (!findLesson) {
-      return res
-        .status(400)
-        .json({ status: "error", message: "Lesson not found" });
+
+    const lesson = await lessonModel.findById(id).select("dictionaries title");
+    if (!lesson) {
+      return res.status(404).json({
+        status: "error",
+        message: "Lesson not found",
+      });
     }
 
-    const dictionaries = findLesson.dictionaries.push(req.body);
-
-    const updateLesson = await lessonModel.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          ...findLesson,
-          dictionaries,
-        },
+    res.status(200).json({
+      status: "success",
+      data: {
+        lessonTitle: lesson.title,
+        dictionaries: lesson.dictionaries || [],
       },
-      {
-        new: true,
-      }
-    );
-    res.status(200).json({ status: "success", data: updateLesson });
+    });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
