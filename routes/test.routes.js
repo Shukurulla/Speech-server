@@ -25,7 +25,8 @@ router.get("/all", async (req, res) => {
         category: item.category,
         difficulty: item.difficulty,
         gradeId: item.gradeId,
-        lessonId: item.lessonId
+        lessonId: item.lessonId,
+        type: item.type,
       };
     });
 
@@ -59,7 +60,7 @@ router.get("/:id", async (req, res) => {
 router.post("/create", authMiddleware, async (req, res) => {
   try {
     await createWarning(req.userData, res);
-    const { title, categoryId, difficulty, gradeId, lessonId } = req.body;
+    const { title, categoryId, difficulty, gradeId, lessonId, type } = req.body;
     const findCategory = await testCategoryModel.findById(categoryId);
     if (!title) {
       return allFieldError(res);
@@ -73,6 +74,7 @@ router.post("/create", authMiddleware, async (req, res) => {
       difficulty,
       gradeId,
       lessonId,
+      type,
     });
 
     successData(res, test);

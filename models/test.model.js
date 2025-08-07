@@ -31,6 +31,11 @@ const testSchema = new mongoose.Schema(
       enum: ["easy", "medium", "hard"],
       default: "medium",
     },
+    type: {
+      type: String,
+      enum: ["speech", "listening"],
+      default: "speech", // Default to speech test for backward compatibility
+    },
     orderNumber: {
       type: Number,
       default: 1,
