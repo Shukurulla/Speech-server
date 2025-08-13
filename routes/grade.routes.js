@@ -111,6 +111,8 @@ router.put("/:id", authMiddleware, adminOnly, async (req, res) => {
 router.delete("/:id", authMiddleware, adminOnly, async (req, res) => {
   try {
     const grade = await Grade.findById(req.params.id);
+    console.log(req.params.id);
+
     if (!grade) {
       return res
         .status(404)
