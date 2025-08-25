@@ -1,6 +1,6 @@
 // routes/mock.test.routes.js
 import express from "express";
-import MockTest from "../models/mock.test.model.js";
+import MockTest from "../models/MockTest.js";
 import Test from "../models/test.model.js";
 import TestDetail from "../models/test.detail.model.js";
 import Lesson from "../models/lesson.model.js";

@@ -1,76 +1,86 @@
-// models/topic.test.model.js
 import mongoose from "mongoose";
+const Schema = mongoose.Schema;
 
-const topicTestSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: mongoose.Types.ObjectId,
-      ref: "user",
-      required: true,
+const TopicTestSchema = new Schema({
+  gradeId: {
+    type: Schema.Types.ObjectId,
+    ref: "Grade",
+    required: true,
+  },
+  afterLesson: {
+    type: Number,
+    required: true,
+    enum: [5, 10, 15, 20], // Only after these lessons
+  },
+  topic: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  prompt: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  duration: {
+    type: Number,
+    default: 60,
+    min: 30,
+    max: 300,
+  },
+  criteria: {
+    relevance: {
+      type: Number,
+      default: 30,
+      min: 0,
+      max: 100,
     },
-    topic: {
-      type: String,
-      required: true,
+    grammar: {
+      type: Number,
+      default: 25,
+      min: 0,
+      max: 100,
     },
-    topicDescription: {
-      type: String,
-      required: true,
+    fluency: {
+      type: Number,
+      default: 25,
+      min: 0,
+      max: 100,
     },
-    lessonRange: {
-      type: String,
-      required: true, // e.g., "Lessons 1-5", "Lessons 6-10"
-    },
-    userSpeech: {
-      type: String,
-      required: true,
-    },
-    analysis: {
-      relevanceScore: {
-        type: Number,
-        min: 0,
-        max: 100,
-      },
-      grammarScore: {
-        type: Number,
-        min: 0,
-        max: 100,
-      },
-      vocabularyScore: {
-        type: Number,
-        min: 0,
-        max: 100,
-      },
-      fluencyScore: {
-        type: Number,
-        min: 0,
-        max: 100,
-      },
-      overallScore: {
-        type: Number,
-        min: 0,
-        max: 100,
-      },
-      feedback: {
-        strengths: [String],
-        improvements: [String],
-        grammarIssues: [String],
-      },
-      detailedAnalysis: String,
-    },
-    audioUrl: {
-      type: String, // Optional: URL to stored audio recording
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
+    vocabulary: {
+      type: Number,
+      default: 20,
+      min: 0,
+      max: 100,
     },
   },
-  {
-    timestamps: true,
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+// Validate that criteria weights sum to 100
+TopicTestSchema.pre("save", function (next) {
+  const sum =
+    this.criteria.relevance +
+    this.criteria.grammar +
+    this.criteria.fluency +
+    this.criteria.vocabulary;
+  if (sum !== 100) {
+    next(new Error("Criteria weights must sum to 100"));
+  } else {
+    this.updatedAt = Date.now();
+    next();
   }
-);
+});
 
-// Index for efficient queries
-mockTestSchema.index({ userId: 1, gradeId: 1, completedAt: -1 });
-
-export default mongoose.model("MockTest", mockTestSchema);
+export default mongoose.model("TopicTest", TopicTestSchema);
