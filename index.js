@@ -14,6 +14,9 @@ import AdminRouter from "./routes/admin.routes.js";
 import GradeRouter from "./routes/grade.routes.js";
 import LessonRouter from "./routes/lesson.routes.js";
 import TestResultRouter from "./routes/test.result.routes.js";
+import AIRouter from "./routes/ai.routes.js";
+import NotificationRouter from "./routes/notification.routes.js";
+import MockTestRouter from "./routes/mock.test.routes.js";
 
 config();
 
@@ -62,6 +65,10 @@ app.use("/api/test-result", TestResultRouter);
 app.use("/api/admin", AdminRouter);
 app.use("/api/grade", GradeRouter);
 app.use("/api/lesson", LessonRouter);
+
+app.use("/api/ai", AIRouter);
+app.use("/api/notifications", NotificationRouter);
+app.use("/api/mock-test", MockTestRouter);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
